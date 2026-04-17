@@ -101,6 +101,13 @@
       box-shadow: none;
       transform: none !important;
     }
+
+    .msg {
+      margin-top: 14px;
+      font-size: 13px;
+      color: #5a7a88;
+      min-height: 20px;
+    }
   </style>
 </head>
 <body>
@@ -110,15 +117,95 @@
       <div class="title">요금레터</div>
       <div class="desc">홈 화면에 먼저 추가한 뒤 사용하세요.</div>
       <button type="button" class="open-btn" onclick="openApp()">앱 열기</button>
+      <div class="msg" id="msg"></div>
     </div>
   </div>
 
   <script>
-    function openApp() {
-      const token = localStorage.getItem('approvedUserToken') || '';
-      const base = "https://script.google.com/macros/s/AKfycbz6txALy_4dgrwM43nd2S0fJhxpbThhvyXGEZ3Et9OTJqccuSnO1dv0U_eREyy2V2mNJA/exec";
-      const url = token ? `${base}?token=${encodeURIComponent(token)}` : base;
+    const APPS_SCRIPT_BASE = "https://script.google.com/macros/s/AKfycbz6txALy_4dgrwM43nd2S0fJhxpbThhvyXGEZ3Et9OTJqccuSnO1dv0U_eREyy2V2mNJA/exec";
+
+    function getSavedToken() {
+      try {
+        return localStorage.getItem('approvedUserToken') || '';
+      } catch (e) {
+        return '';
+      }
+    }
+
+    function saveToken(token) {
+      try {
+        if (token) localStorage.setItem('approvedUserToken', token);
+      } catch (e) {}
+    }
+
+    function getPendingEmail() {
+      try {
+        return localStorage.getItem('pendingUserEmail') || '';
+      } catch (e) {
+        return '';
+      }
+    }
+
+    function clearPendingEmail() {
+      try {
+        localStorage.removeItem('pendingUserEmail');
+      } catch (e) {}
+    }
+
+    function setMsg(text) {
+      const el = document.getElementById('msg');
+      if (el) el.textContent = text || '';
+    }
+
+    function moveToApp(token) {
+      const url = token
+        ? `${APPS_SCRIPT_BASE}?token=${encodeURIComponent(token)}`
+        : APPS_SCRIPT_BASE;
       window.location.href = url;
+    }
+
+    async function fetchTokenByEmail(email) {
+      const url = `${APPS_SCRIPT_BASE}?mode=getTokenByEmail&email=${encodeURIComponent(email)}`;
+      const res = await fetch(url, { method: 'GET' });
+      if (!res.ok) throw new Error('token fetch failed');
+      return await res.json();
+    }
+
+    async function openApp() {
+      const savedToken = getSavedToken();
+      if (savedToken) {
+        moveToApp(savedToken);
+        return;
+      }
+
+      const pendingEmail = getPendingEmail();
+      if (!pendingEmail) {
+        moveToApp('');
+        return;
+      }
+
+      try {
+        setMsg('승인 상태를 확인하는 중...');
+        const result = await fetchTokenByEmail(pendingEmail);
+
+        if (result && result.success && result.token) {
+          saveToken(result.token);
+          clearPendingEmail();
+          moveToApp(result.token);
+          return;
+        }
+
+        if (result && result.pending) {
+          setMsg('아직 승인 대기 중입니다.');
+          moveToApp('');
+          return;
+        }
+
+        moveToApp('');
+      } catch (e) {
+        setMsg('상태 확인 후 앱으로 이동합니다.');
+        moveToApp('');
+      }
     }
   </script>
 </body>
