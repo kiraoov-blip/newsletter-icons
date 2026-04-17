@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="요금레터">
-  <title>요금레터</title>
+  <meta name="apple-mobile-web-app-title" content="요금채널 20N">
+  <title>요금채널 20N</title>
   <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 
   <style>
@@ -114,7 +114,7 @@
   <div class="viewport">
     <div class="card">
       <div class="icon">📮</div>
-      <div class="title">요금레터</div>
+      <div class="title">요금채널 20N</div>
       <div class="desc">홈 화면에 먼저 추가한 뒤 사용하세요.</div>
       <button type="button" class="open-btn" onclick="openApp()">앱 열기</button>
       <div class="msg" id="msg"></div>
@@ -124,32 +124,31 @@
   <script>
     const APPS_SCRIPT_BASE = "https://script.google.com/macros/s/AKfycbz6txALy_4dgrwM43nd2S0fJhxpbThhvyXGEZ3Et9OTJqccuSnO1dv0U_eREyy2V2mNJA/exec";
 
-    function getSavedToken() {
+    function getSavedDeviceToken() {
       try {
-        return localStorage.getItem('approvedUserToken') || '';
+        return localStorage.getItem('deviceToken') || '';
       } catch (e) {
         return '';
       }
     }
 
-    function saveToken(token) {
+    function saveDeviceToken(token) {
       try {
-        if (token) localStorage.setItem('approvedUserToken', token);
+        if (token) localStorage.setItem('deviceToken', token);
       } catch (e) {}
     }
 
-    function getPendingEmail() {
-      try {
-        return localStorage.getItem('pendingUserEmail') || '';
-      } catch (e) {
-        return '';
+    function createDeviceToken() {
+      return 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+    }
+
+    function ensureDeviceToken() {
+      let token = getSavedDeviceToken();
+      if (!token) {
+        token = createDeviceToken();
+        saveDeviceToken(token);
       }
-    }
-
-    function clearPendingEmail() {
-      try {
-        localStorage.removeItem('pendingUserEmail');
-      } catch (e) {}
+      return token;
     }
 
     function setMsg(text) {
@@ -157,56 +156,35 @@
       if (el) el.textContent = text || '';
     }
 
-    function moveToApp(token) {
-      const url = token
-        ? `${APPS_SCRIPT_BASE}?token=${encodeURIComponent(token)}`
-        : APPS_SCRIPT_BASE;
-      window.location.href = url;
-    }
-
-    async function fetchTokenByEmail(email) {
-      const url = `${APPS_SCRIPT_BASE}?mode=getTokenByEmail&email=${encodeURIComponent(email)}`;
+    async function checkApproval(deviceToken) {
+      const url = `${APPS_SCRIPT_BASE}?mode=checkDeviceApproval&deviceToken=${encodeURIComponent(deviceToken)}`;
       const res = await fetch(url, { method: 'GET' });
-      if (!res.ok) throw new Error('token fetch failed');
+      if (!res.ok) throw new Error('approval check failed');
       return await res.json();
     }
 
-    async function openApp() {
-      const savedToken = getSavedToken();
-      if (savedToken) {
-        moveToApp(savedToken);
-        return;
-      }
+    function openApp() {
+      const deviceToken = ensureDeviceToken();
+      const url = `${APPS_SCRIPT_BASE}?deviceToken=${encodeURIComponent(deviceToken)}`;
+      window.location.href = url;
+    }
 
-      const pendingEmail = getPendingEmail();
-      if (!pendingEmail) {
-        moveToApp('');
-        return;
-      }
+    window.onload = async function() {
+      const deviceToken = ensureDeviceToken();
 
       try {
         setMsg('승인 상태를 확인하는 중...');
-        const result = await fetchTokenByEmail(pendingEmail);
+        const result = await checkApproval(deviceToken);
 
-        if (result && result.success && result.token) {
-          saveToken(result.token);
-          clearPendingEmail();
-          moveToApp(result.token);
-          return;
+        if (result && result.success && result.approved) {
+          setMsg('승인된 기기입니다.');
+        } else {
+          setMsg('');
         }
-
-        if (result && result.pending) {
-          setMsg('아직 승인 대기 중입니다.');
-          moveToApp('');
-          return;
-        }
-
-        moveToApp('');
       } catch (e) {
-        setMsg('상태 확인 후 앱으로 이동합니다.');
-        moveToApp('');
+        setMsg('');
       }
-    }
+    };
   </script>
 </body>
 </html>
