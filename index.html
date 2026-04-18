@@ -3,10 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+  <!-- iPhone 홈화면 앱 설정 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="전기요금 채널 20N📮">
-  <title>전기요금 채널 20N📮</title>
-  <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-title" content="요금 20N">
+  <meta name="theme-color" content="#eef4f7">
+
+  <title>전기요금 채널 20N</title>
+
+  <!-- 홈화면 아이콘 -->
+  <link rel="apple-touch-icon" sizes="180x180" href="https://kiraoov-blip.github.io/newsletter-icons/apple-touch-icon-20n.png?v=20260419-2">
+  <link rel="icon" type="image/png" href="https://kiraoov-blip.github.io/newsletter-icons/apple-touch-icon-20n.png?v=20260419-2">
 
   <style>
     html, body {
@@ -15,7 +22,7 @@
       height: 100%;
       overflow: hidden;
       background: #eef4f7;
-      font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
       -webkit-text-size-adjust: 100%;
     }
 
@@ -90,6 +97,7 @@
       user-select: none;
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
+      text-decoration: none;
     }
 
     .open-btn:hover,
@@ -101,90 +109,22 @@
       box-shadow: none;
       transform: none !important;
     }
-
-    .msg {
-      margin-top: 14px;
-      font-size: 13px;
-      color: #5a7a88;
-      min-height: 20px;
-    }
   </style>
 </head>
 <body>
   <div class="viewport">
     <div class="card">
       <div class="icon">📮</div>
-      <div class="title">전기요금 채널 20N📮</div>
+      <div class="title">전기요금 채널 20N</div>
       <div class="desc">홈 화면에 먼저 추가한 뒤 사용하세요.</div>
-      <button type="button" class="open-btn" onclick="openApp()">앱 열기</button>
-      <div class="msg" id="msg"></div>
+
+      <a
+        class="open-btn"
+        href="https://script.google.com/macros/s/AKfycbxiGqIQ6JRjbIq0S_wveLwQNtpjctxgtfJZXF-GENYHFaa02v3dfRyK45foOPy9B2PUvQ/exec"
+      >
+        앱 열기
+      </a>
     </div>
   </div>
-
-  <script>
-    const APPS_SCRIPT_BASE = "https://script.google.com/macros/s/AKfycbz6txALy_4dgrwM43nd2S0fJhxpbThhvyXGEZ3Et9OTJqccuSnO1dv0U_eREyy2V2mNJA/exec";
-
-    function getSavedDeviceToken() {
-      try {
-        return localStorage.getItem('deviceToken') || '';
-      } catch (e) {
-        return '';
-      }
-    }
-
-    function saveDeviceToken(token) {
-      try {
-        if (token) localStorage.setItem('deviceToken', token);
-      } catch (e) {}
-    }
-
-    function createDeviceToken() {
-      return 'dev_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
-    }
-
-    function ensureDeviceToken() {
-      let token = getSavedDeviceToken();
-      if (!token) {
-        token = createDeviceToken();
-        saveDeviceToken(token);
-      }
-      return token;
-    }
-
-    function setMsg(text) {
-      const el = document.getElementById('msg');
-      if (el) el.textContent = text || '';
-    }
-
-    async function checkApproval(deviceToken) {
-      const url = `${APPS_SCRIPT_BASE}?mode=checkDeviceApproval&deviceToken=${encodeURIComponent(deviceToken)}`;
-      const res = await fetch(url, { method: 'GET' });
-      if (!res.ok) throw new Error('approval check failed');
-      return await res.json();
-    }
-
-    function openApp() {
-      const deviceToken = ensureDeviceToken();
-      const url = `${APPS_SCRIPT_BASE}?deviceToken=${encodeURIComponent(deviceToken)}`;
-      window.location.href = url;
-    }
-
-    window.onload = async function() {
-      const deviceToken = ensureDeviceToken();
-
-      try {
-        setMsg('승인 상태를 확인하는 중...');
-        const result = await checkApproval(deviceToken);
-
-        if (result && result.success && result.approved) {
-          setMsg('승인된 기기입니다.');
-        } else {
-          setMsg('');
-        }
-      } catch (e) {
-        setMsg('');
-      }
-    };
-  </script>
 </body>
 </html>
